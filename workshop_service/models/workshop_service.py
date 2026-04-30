@@ -149,7 +149,24 @@ class WorkshopService(models.Model):
            }
         myline = self.env['sale.order.line'].sudo().create(vals)
         self.write({'sale_order_id': myso.id})
-        return res
+        action = self.env['ir.actions.actions']._for_xml_id('sale.action_orders')
+        if len(self.sale_order_id) > 1:
+            action['domain'] = [('id', 'in', self.sale_order_id.ids)]
+        elif len(self.sale_order_id) == 1:
+            form_view = [(self.env.ref('sale.view_order_form').id, 'form')]
+            if 'views' in action:
+                action['views'] = form_view + [(state,view) for state,view in action['views'] if view != 'form']
+            else:
+                action['views'] = form_view
+            action['res_id'] = self.sale_order_id.id
+        else:
+            action = {'type': 'ir.actions.act_window_close'}
+
+        context = {
+        }
+        action['context'] = context
+        return action
+
 
     def action_create_picking(self):
         self.ensure_one()
@@ -163,13 +180,10 @@ class WorkshopService(models.Model):
         for line in self.line_ids:
             stock_moves.append((0, 0, {
                 'product_id': line.product_id.id,
-                'purchase_line_id': line.id,
                 'name': line.name,
-                'product_uom_qty': line.product_uom_qty,
-                'quantity': line.product_uom_qty,# Ordered Qty
-                'product_uom': line.product_uom.id,
-                'location_id': source_location.id,
-                'location_dest_id': destination_location.id,
+                'product_uom_qty': line.qty,
+                'quantity': line.qty,# Ordered Qty
+                'product_uom': line.uom_id.id,
                 'origin': self.name,
             }))
 
@@ -180,3 +194,20 @@ class WorkshopService(models.Model):
             'move_ids': stock_moves,
         })
         self.write({'picking_id': picking.id})
+        action = self.env['ir.actions.actions']._for_xml_id('stock.stock_picking_action_picking_type')
+        if len(self.picking_id) > 1:
+            action['domain'] = [('id', 'in', self.picking_id.ids)]
+        elif len(self.sale_order_id) == 1:
+            form_view = [(self.env.ref('stock.action_picking_form').id, 'form')]
+            if 'views' in action:
+                action['views'] = form_view + [(state,view) for state,view in action['views'] if view != 'form']
+            else:
+                action['views'] = form_view
+            action['res_id'] = self.picking_id.id
+        else:
+            action = {'type': 'ir.actions.act_window_close'}
+
+        context = {
+        }
+        action['context'] = context
+        return action
