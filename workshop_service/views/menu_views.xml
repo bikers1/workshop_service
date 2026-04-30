@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_workshop_root"
+              name="Workshop"
+              sequence="52"/>
+
+    <menuitem id="menu_workshop_service_orders"
+              name="Service Orders"
+              parent="menu_workshop_root"
+              action="action_workshop_service"
+              sequence="10"/>
+
+</odoo>

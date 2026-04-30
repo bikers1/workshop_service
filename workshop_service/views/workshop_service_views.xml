@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_workshop_service_list" model="ir.ui.view">
+        <field name="name">workshop.service.list</field>
+        <field name="model">workshop.service</field>
+        <field name="arch" type="xml">
+            <list string="Service Orders"
+                  decoration-success="state == 'done'"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-warning="state == 'in_progress'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="vehicle_name"/>
+                <field name="technician_name"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="duration_days"/>
+                <field name="amount_total"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-info="state == 'confirmed'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_workshop_service_form" model="ir.ui.view">
+        <field name="name">workshop.service.form</field>
+        <field name="model">workshop.service</field>
+        <field name="arch" type="xml">
+            <form string="Service Order">
+                <header>
+                    <button name="action_confirm"
+                            string="Confirm"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"/>
+                    <button name="action_start"
+                            string="Start Work"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'confirmed'"/>
+                    <button name="action_done"
+                            string="Mark Done"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'in_progress'"/>
+                    <button name="action_create_sale_order"
+                            string="Create Sale Order"
+                            type="object"
+                            invisible="state not in ('confirmed','in_progress','done') or sale_order_id != False"/>
+                    <button name="action_create_picking"
+                            string="Create Stock Picking"
+                            type="object"
+                            invisible="state not in ('confirmed','in_progress','done') or picking_id != False"/>
+                    <button name="action_cancel"
+                            string="Cancel"
+                            type="object"
+                            invisible="state in ('done','cancelled')"/>
+                    <button name="action_reset_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            invisible="state != 'cancelled'"/>
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,confirmed,in_progress,done"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="state != 'draft'" placeholder="Order Reference..."/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Customer Information">
+                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="vehicle_name" readonly="state != 'draft'"/>
+                            <field name="license_plate"/>
+                        </group>
+                        <group string="Service Information">
+                            <field name="technician_id"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="duration_days" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Service Lines" name="lines">
+                            <field name="line_ids" readonly="state in ('done','cancelled')">
+                                <tree editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="line_type"/>
+                                    <field name="product_id"/>
+                                    <field name="name"/>
+                                    <field name="qty"/>
+                                    <field name="uom_id"/>
+                                    <field name="price_unit"/>
+                                    <field name="subtotal" readonly="1"/>
+                                </tree>
+                            </field>
+
+                            <group class="oe_subtotal_footer oe_right" colspan="2">
+                                <field name="total_amount" string="Subtotal" readonly="1"/>
+                                <field name="amount_tax" string="Tax (11%)" readonly="1"/>
+                                <field name="amount_total"
+                                       string="Grand Total"
+                                       readonly="1"
+                                       class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+
+                        <page string="Other Information" name="other">
+                            <group>
+                                <field name="sale_order_id" readonly="1"/>
+                                <field name="picking_id" readonly="1"/>
+                            </group>
+                            <field name="notes" placeholder="Internal notes..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_workshop_service_search" model="ir.ui.view">
+        <field name="name">workshop.service.search</field>
+        <field name="model">workshop.service</field>
+        <field name="arch" type="xml">
+            <search string="Search Service Orders">
+                <field name="name" string="Order Ref"/>
+                <field name="partner_id"/>
+                <field name="vehicle_name"/>
+                <field name="technician_id"/>
+                <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Confirmed" name="confirmed" domain="[('state','=','confirmed')]"/>
+                <filter string="In Progress" name="in_progress" domain="[('state','=','in_progress')]"/>
+                <filter string="Done" name="done" domain="[('state','=','done')]"/>
+                <separator/>
+                <filter string="My Orders" name="my_orders" domain="[('technician_id','=',uid)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Customer" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Technician" name="group_technician" context="{'group_by': 'technician_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="action_workshop_service" model="ir.actions.act_window">
+        <field name="name">Service Orders</field>
+        <field name="res_model">workshop.service</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_workshop_service_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Buat Service Order pertama Anda!
+            </p>
+            <p>
+                Kelola semua service order bengkel di sini.
+            </p>
+        </field>
+    </record>
+
+</odoo>

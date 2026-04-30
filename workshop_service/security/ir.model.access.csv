@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_workshop_service,workshop.service all,model_workshop_service_orders,,1,1,1,1
+access_workshop_service_line,workshop.service.line all,model_workshop_service_line,,1,1,1,1
