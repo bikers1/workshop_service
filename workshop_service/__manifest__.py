@@ -15,7 +15,7 @@ Fitur:
     """,
     'author': 'Test Candidate',
     'website': '',
-    'depends': ['base', 'sales', 'stock', 'mail'],
+    'depends': ['base', 'sale', 'stock', 'mail'],
     'data': [
         'security/ir.model.access.csv',
         'views/workshop_service_views.xml',
