@@ -8,7 +8,7 @@ class WorkshopServiceLine(models.Model):
 
     sequence = fields.Integer(string='Sequence', default=10)
     service_id = fields.Many2one(
-        'workshop.service.order',
+        'workshop.service',
         string='Service Order',
         required=True,
         ondelete='cascade',
