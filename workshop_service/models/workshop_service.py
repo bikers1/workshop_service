@@ -17,7 +17,7 @@ class WorkshopService(models.Model):
         tracking=True,
     )
     partner_id = fields.Many2one(
-        'res.partners',
+        'res.partner',
         string='Customer',
         required=True,
         tracking=True,
