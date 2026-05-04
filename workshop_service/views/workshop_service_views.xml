@@ -68,6 +68,7 @@
                     <field name="state"
                            widget="statusbar"
                            statusbar_visible="draft,confirmed,in_progress,done"/>
+
                 </header>
 
                 <sheet>
@@ -76,7 +77,23 @@
                             <field name="name" readonly="state != 'draft'" placeholder="Order Reference..."/>
                         </h1>
                     </div>
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_view_sale_order"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-pencil-square-o"
+                        invisible="sales_count == 0">
+                        <field name="sales_count" widget="statinfo" string="Sales"/>
+                    </button>
+                    <button name="action_view_stock_picking"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-pencil-square-o"
+                        invisible="picking_count == 0">
+                        <field name="picking_count" widget="statinfo" string="Stock Picking"/>
+                    </button>
 
+                </div>
                     <group>
                         <group string="Customer Information">
                             <field name="partner_id" readonly="state != 'draft'"/>

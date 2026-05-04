@@ -70,6 +70,20 @@ class WorkshopService(models.Model):
         'stock.picking', string='Related Picking', readonly=True, copy=False,
     )
     notes = fields.Text(string='Internal Notes')
+    sales_count = fields.Integer(compute='compute_sales_count')
+
+    picking_count = fields.Integer(compute='compute_stock_picking')
+
+    @api.depends('sale_order_id')
+    def compute_sales_count(self):
+        for rec in self:
+            rec.sales_count = int(len(rec.sale_order_id.ids)) or 0
+
+    @api.depends('picking_id')
+    def compute_stock_picking(self):
+        for rec in self:
+            rec.picking_count = int(len(rec.picking_id.ids)) or 0
+
 
     @api.depends('line_ids.subtotal')
     def _compute_total_amount(self):
@@ -188,7 +202,7 @@ class WorkshopService(models.Model):
                 'product_uom': line.uom_id.id,
                 'origin': self.name,
                 'location_id': default_src.id,
-                'location_dest_id': default_dest.id,
+                'location_dest_id': default_dest.id or self.env.ref('stock.stock_location_customers').id,
             }))
 
         picking = self.env['stock.picking'].sudo().create({
@@ -197,7 +211,7 @@ class WorkshopService(models.Model):
             'origin': self.name,
             'move_ids': stock_moves,
             'location_id': default_src.id,
-            'location_dest_id': default_dest.id,
+            'location_dest_id': default_dest.id or self.env.ref('stock.stock_location_customers').id,
         })
         self.write({'picking_id': picking.id})
         action = self.env['ir.actions.actions']._for_xml_id('stock.stock_picking_action_picking_type')
@@ -216,4 +230,46 @@ class WorkshopService(models.Model):
         context = {
         }
         action['context'] = context
+        return action
+
+    def action_view_sale_order(self):
+        action = self.env['ir.actions.actions']._for_xml_id('sale.action_orders')
+        if len(self.sale_order_id) > 1:
+            action['domain'] = [('id', 'in', self.sale_order_id.ids)]
+        elif len(self.sale_order_id) == 1:
+            form_view = [(self.env.ref('sale.view_order_form').id, 'form')]
+            if 'views' in action:
+                action['views'] = form_view + [(state,view) for state,view in action['views'] if view != 'form']
+            else:
+                action['views'] = form_view
+            action['res_id'] = self.sale_order_id.id
+        else:
+            action = {'type': 'ir.actions.act_window_close'}
+
+        context = {
+        }
+        action['context'] = context
+        return action
+
+    def action_view_stock_picking(self):
+        action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
+
+        if len(self.picking_id) > 1:
+            action['domain'] = [('id', 'in', self.picking_id.ids)]
+        elif self.picking_id:
+            form_view = [(self.env.ref('stock.view_picking_form').id, 'form')]
+            if 'views' in action:
+                action['views'] = form_view + [(state,view) for state,view in action['views'] if view != 'form']
+            else:
+                action['views'] = form_view
+            action['res_id'] = self.picking_id.id
+        # Prepare the context.
+        picking_id = self.picking_id.filtered(lambda l: l.picking_type_id.code == 'outgoing')
+        if picking_id:
+            picking_id = picking_id[0]
+        else:
+            picking_id = self.picking_id[0]
+        # View context from sale_renting `rental_schedule_view_form`
+        cleaned_context = {k: v for k, v in self._context.items() if k != 'form_view_ref'}
+        action['context'] = dict(cleaned_context, default_partner_id=self.partner_id.id, default_picking_type_id=picking_id.picking_type_id.id, default_origin=self.name, default_group_id=picking_id.group_id.id)
         return action
