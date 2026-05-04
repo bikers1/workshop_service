@@ -160,7 +160,7 @@ class WorkshopService(models.Model):
                'order_id': myso.id,
                'price_unit': rec.price_unit,
            }
-        myline = self.env['sale.order.line'].sudo().create(vals)
+           myline = self.env['sale.order.line'].sudo().create(vals)
         self.write({'sale_order_id': myso.id})
         action = self.env['ir.actions.actions']._for_xml_id('sale.action_orders')
         if len(self.sale_order_id) > 1:
