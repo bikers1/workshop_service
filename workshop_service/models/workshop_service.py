@@ -145,7 +145,6 @@ class WorkshopService(models.Model):
                'state': 'draft',
                'order_id': myso.id,
                'price_unit': rec.price_unit,
-               'returimei_line_id': self.id,
            }
         myline = self.env['sale.order.line'].sudo().create(vals)
         self.write({'sale_order_id': myso.id})
@@ -170,11 +169,14 @@ class WorkshopService(models.Model):
 
     def action_create_picking(self):
         self.ensure_one()
-        if self.sale_order_id:
-            raise UserError('There is Already Sales Order Linked with this document')
+        if self.picking_id:
+            raise UserError('There is Already Picking ID Linked with this document')
         stock_moves = []
         # raise NotImplementedError('Implementasikan method ini.')
         picking_type_id = self.env['stock.picking.type'].search([('code', '=', 'outgoing')], limit=1)
+        default_src = picking_type_id.default_location_src_id
+        # Default Destination Location (e.g., Partners/Customers)
+        default_dest = picking_type_id.default_location_dest_id
         if not picking_type_id:
             raise ValueError("No 'outgoing' picking type found.")
         for line in self.line_ids:
@@ -185,6 +187,8 @@ class WorkshopService(models.Model):
                 'quantity': line.qty,# Ordered Qty
                 'product_uom': line.uom_id.id,
                 'origin': self.name,
+                'location_id': default_src.id,
+                'location_dest_id': default_dest.id,
             }))
 
         picking = self.env['stock.picking'].sudo().create({
@@ -192,6 +196,8 @@ class WorkshopService(models.Model):
             'partner_id': self.partner_id.id,
             'origin': self.name,
             'move_ids': stock_moves,
+            'location_id': default_src.id,
+            'location_dest_id': default_dest.id,
         })
         self.write({'picking_id': picking.id})
         action = self.env['ir.actions.actions']._for_xml_id('stock.stock_picking_action_picking_type')
